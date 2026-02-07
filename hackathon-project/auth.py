@@ -10,17 +10,14 @@ if not os.path.exists(USERS_FILE):
     with open(USERS_FILE, "w") as f:
         json.dump({}, f)
 
-# Load users
 def load_users():
     with open(USERS_FILE, "r") as f:
         return json.load(f)
 
-# Save users
 def save_users(users):
     with open(USERS_FILE, "w") as f:
         json.dump(users, f)
 
-# Signup function
 def signup(username, password):
     users = load_users()
     if username in users:
@@ -30,7 +27,6 @@ def signup(username, password):
     save_users(users)
     return True
 
-# Login function
 def login(username, password):
     users = load_users()
     if username not in users:
@@ -38,7 +34,6 @@ def login(username, password):
     hashed_pw = users[username].encode()
     return bcrypt.checkpw(password.encode(), hashed_pw)
 
-# Render login/signup page
 def render():
     st.title("Login / Signup")
 
@@ -59,10 +54,12 @@ def render():
         if st.button("Login"):
             if login(username, password):
                 st.success(f"Welcome {username}!")
-                # Update session state to work with your app.py
+                # Update session state
                 st.session_state.logged_in = True
                 st.session_state.user = username
-                st.experimental_rerun()  # Refresh dashboard after login
+                # Instead of calling experimental_rerun here, set a flag
+                st.session_state.login_success = True
             else:
                 st.error("Invalid username or password.")
+
 
