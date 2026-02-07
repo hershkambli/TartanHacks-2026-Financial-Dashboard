@@ -4,7 +4,7 @@ from styles import load_css
 from utils import calculate_portfolio_metrics
 
 # Import tab modules
-from tabs import markets, ai_assistant, portfolio, settings
+from tabs import markets, ai_assistant, portfolio, settings, investments
 
 # Page config
 st.set_page_config(
@@ -23,7 +23,7 @@ if 'portfolio' not in st.session_state:
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### 💰 FinDash")
+    st.markdown("### FinDash")
     st.markdown("---")
 
     api_key = st.text_input("API Key", type="password", placeholder="sk-ant-...")
@@ -47,17 +47,20 @@ with st.sidebar:
         with col2:
             st.metric("Sharpe", "N/A")
 
-# Tabs at the very top
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Markets", "🤖 AI Assistant", "📈 Portfolio", "⚙️ Settings"])
+# Tabs - Add Investments tab
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Budget", "Investments", "Markets", "AI Assistant", "Settings"])
 
 with tab1:
-    markets.render()
-
-with tab2:
-    ai_assistant.render(api_key)
-
-with tab3:
     portfolio.render()
 
+with tab2:
+    investments.render()
+
+with tab3:
+    markets.render()
+
 with tab4:
+    ai_assistant.render(api_key)
+
+with tab5:
     settings.render()
