@@ -1,46 +1,35 @@
 import streamlit as st
-from anthropic import Anthropic
+import os
+import pickle
 
+def render():
+    st.header("AI-Powered Recommendations")
+    st.write("Based on your financial profile and goals")
 
-def render(api_key):
-    st.markdown("# AI Investment Assistant")
-    st.caption("Get personalized investment advice powered by AI")
-    st.markdown("---")
+    # Example user inputs
+    age = st.number_input("Current Age", value=30)
+    retirement_age = st.number_input("Target Retirement Age", value=65)
+    risk_tolerance = st.selectbox("Risk Tolerance", ["Low", "Moderate", "High"])
+    retirement_goal = st.number_input("Retirement Savings Goal", value=1000000)
+    total_net_worth = st.number_input("Total Net Worth", value=450000.00, step=1000.0)
 
-    question = st.text_area(
-        "Ask anything about investing",
-        placeholder="E.g., What's a good diversification strategy for tech stocks?",
-        height=120,
-        label_visibility="collapsed",
-        key="ai_question"
-    )
+    # Path to ML model
+    model_path = "models/risk_classifier.pkl"
 
-    col1, col2, col3, col4 = st.columns([1, 1, 1, 3])
-    with col1:
-        ask_btn = st.button("Ask AI", type="primary", use_container_width=True)
-    with col2:
-        if st.button("Clear", use_container_width=True):
-            st.rerun()
-
-    if ask_btn and question:
-        if not api_key:
-            st.warning("⚠️ Please enter your Anthropic API key in the sidebar.")
-        else:
-            try:
-                with st.spinner("Thinking..."):
-                    client = Anthropic(api_key=api_key)
-
-                    message = client.messages.create(
-                        model="claude-sonnet-4-20250514",
-                        max_tokens=1024,
-                        messages=[{
-                            "role": "user",
-                            "content": f"You are a financial advisor. Answer this investment question concisely and professionally: {question}"
-                        }]
-                    )
-
-                    st.markdown("---")
-                    st.markdown("#### AI Response")
-                    st.markdown(message.content[0].text)
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+    if os.path.exists(model_path):
+        try:
+            with open(model_path, "rb") as f:
+                risk_model = pickle.load(f)
+            st.success("Model loaded successfully!")
+            # Example placeholder for predictions
+            st.write("Predicted risk: Moderate")  # Replace with your model prediction logic
+        except Exception as e:
+            st.error(f"Error loading ML model: {e}")
+            st.write("Predicted risk: Moderate (dummy prediction)")
+    else:
+        st.warning(
+            f"ML model not found at {model_path}.\n"
+            "You can generate it locally with `python models/train_model.py` or use a dummy model."
+        )
+        # Dummy prediction
+        st.write("Predicted risk: Moderate (dummy prediction)")
