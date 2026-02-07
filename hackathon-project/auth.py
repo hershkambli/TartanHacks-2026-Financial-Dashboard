@@ -1,66 +1,67 @@
 import streamlit as st
-import sqlite3
 import bcrypt
+import json
+import os
 
-# ---------- Database Connection ----------
-def get_connection():
-    return sqlite3.connect("users.db")
+# Path to the JSON file storing user credentials
+USERS_FILE = "users.json"
 
-# ---------- Signup Function ----------
+# Initialize users file if it doesn't exist
+if not os.path.exists(USERS_FILE):
+    with open(USERS_FILE, "w") as f:
+        json.dump({}, f)  # empty dict for no users
+
+# Load users from file
+def load_users():
+    with open(USERS_FILE, "r") as f:
+        return json.load(f)
+
+# Save users to file
+def save_users(users):
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f)
+
+# Signup a new user
 def signup(username, password):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            username TEXT PRIMARY KEY,
-            password TEXT NOT NULL
-        )
-    """)
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    try:
-        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed))
-        conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        conn.close()
+    users = load_users()
+    if username in users:
+        return False  # User already exists
+    # Hash the password before storing
+    hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    users[username] = hashed_pw
+    save_users(users)
+    return True
 
-# ---------- Login Function ----------
+# Login existing user
 def login(username, password):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT password FROM users WHERE username = ?", (username,))
-    data = c.fetchone()
-    conn.close()
-    if data and bcrypt.checkpw(password.encode(), data[0]):
-        return True
-    return False
+    users = load_users()
+    if username not in users:
+        return False
+    hashed_pw = users[username].encode()
+    return bcrypt.checkpw(password.encode(), hashed_pw)
 
-# ---------- Streamlit Login/Signup UI ----------
+# Render login/signup page
 def render():
     st.title("Login / Signup")
+
     menu = ["Login", "Signup"]
-    choice = st.selectbox("Select", menu)
+    choice = st.selectbox("Select Action", menu)
+
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
 
     if choice == "Signup":
-        st.subheader("Create a new account")
-        new_user = st.text_input("Username")
-        new_pass = st.text_input("Password", type="password")
-        if st.button("Signup"):
-            if signup(new_user, new_pass):
+        if st.button("Create Account"):
+            if signup(username, password):
                 st.success("Account created! You can now login.")
             else:
-                st.error("Username already exists!")
+                st.error("Username already exists.")
 
     elif choice == "Login":
-        st.subheader("Login to your account")
-        username = st.text_input("Username", key="login_user")
-        password = st.text_input("Password", type="password", key="login_pass")
         if st.button("Login"):
             if login(username, password):
                 st.success(f"Welcome {username}!")
-                st.session_state.logged_in = True
-                st.session_state.user = username
+                st.session_state["username"] = username
             else:
-                st.error("Invalid username or password")
+                st.error("Invalid username or password.")
+
