@@ -3,36 +3,34 @@ import bcrypt
 import json
 import os
 
-# Path to the JSON file storing user credentials
 USERS_FILE = "users.json"
 
-# Initialize users file if it doesn't exist
+# Initialize users.json if it doesn't exist
 if not os.path.exists(USERS_FILE):
     with open(USERS_FILE, "w") as f:
-        json.dump({}, f)  # empty dict for no users
+        json.dump({}, f)
 
-# Load users from file
+# Load users
 def load_users():
     with open(USERS_FILE, "r") as f:
         return json.load(f)
 
-# Save users to file
+# Save users
 def save_users(users):
     with open(USERS_FILE, "w") as f:
         json.dump(users, f)
 
-# Signup a new user
+# Signup function
 def signup(username, password):
     users = load_users()
     if username in users:
-        return False  # User already exists
-    # Hash the password before storing
+        return False
     hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     users[username] = hashed_pw
     save_users(users)
     return True
 
-# Login existing user
+# Login function
 def login(username, password):
     users = load_users()
     if username not in users:
@@ -61,7 +59,10 @@ def render():
         if st.button("Login"):
             if login(username, password):
                 st.success(f"Welcome {username}!")
-                st.session_state["username"] = username
+                # Update session state to work with your app.py
+                st.session_state.logged_in = True
+                st.session_state.user = username
+                st.experimental_rerun()  # Refresh dashboard after login
             else:
                 st.error("Invalid username or password.")
 
