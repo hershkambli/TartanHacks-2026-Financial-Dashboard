@@ -131,3 +131,4 @@ yahoo-fin==0.8.9.1
 yfinance==1.1.0
 zipp==3.23.0
 zope.interface==8.2
+bcrypt
