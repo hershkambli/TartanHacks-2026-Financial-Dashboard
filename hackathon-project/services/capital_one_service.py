@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import numpy as np
 import calendar
-import time
 
 
 def initialize_demo_data():
@@ -249,10 +248,11 @@ def render():
 
         st.markdown("---")
 
-    # Bank Connection Options
+    # Bank Connection Options - TWO OPTIONS: Plaid OR Capital One
     if not st.session_state.bank_connected:
         st.markdown("### Connect Bank Account")
 
+        # Create tabs for different connection methods
         conn_tab1, conn_tab2 = st.tabs(["Plaid", "Capital One"])
 
         # PLAID TAB
@@ -261,217 +261,136 @@ def render():
 
             col1, col2 = st.columns(2)
             with col1:
-                plaid_username = st.text_input("Username", placeholder="Enter username", key="plaid_username")
+                plaid_client_id = st.text_input("Plaid Client ID", type="password", key="budget_plaid_client")
             with col2:
-                plaid_password = st.text_input("Password", type="password", placeholder="Enter password",
-                                               key="plaid_password")
+                plaid_secret = st.text_input("Plaid Secret", type="password", key="budget_plaid_secret")
 
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                if st.button("Sign In", type="primary", key="plaid_signin_btn"):
-                    if plaid_username and plaid_password:
-                        with st.spinner("Authenticating..."):
-                            time.sleep(1)
+            st.info("**Demo:** Click 'Connect' to load Plaid sample data")
 
-                        if not st.session_state.demo_loaded:
-                            st.session_state.monthly_history = initialize_demo_data()
-                            st.session_state.demo_loaded = True
+            if st.button("Connect via Plaid", type="primary", key="connect_plaid_btn"):
+                if not st.session_state.demo_loaded:
+                    st.session_state.monthly_history = initialize_demo_data()
+                    st.session_state.demo_loaded = True
 
-                        st.session_state.bank_transactions = generate_demo_transactions()
-                        st.session_state.bank_connected = True
+                st.session_state.bank_transactions = generate_demo_transactions()
+                st.session_state.bank_connected = True
 
-                        for transaction in st.session_state.bank_transactions:
-                            recurring_keywords = ['netflix', 'spotify', 'gym', 'internet', 'electric']
-                            is_recurring = any(
-                                keyword in transaction['merchant'].lower() for keyword in recurring_keywords)
+                for transaction in st.session_state.bank_transactions:
+                    recurring_keywords = ['netflix', 'spotify', 'gym', 'internet', 'electric']
+                    is_recurring = any(keyword in transaction['merchant'].lower() for keyword in recurring_keywords)
 
-                            if is_recurring and not any(
-                                    s['Name'] == transaction['merchant'] for s in st.session_state.subscriptions):
-                                st.session_state.subscriptions.append({
-                                    'Name': transaction['merchant'],
-                                    'Cost': transaction['amount'],
-                                    'Category': transaction['category'],
-                                    'Date Added': transaction['date']
-                                })
-                            else:
-                                if not any(e['Name'] == f"{transaction['merchant']} ({transaction['date']})" for e in
-                                           st.session_state.expenses):
-                                    st.session_state.expenses.append({
-                                        'Name': f"{transaction['merchant']} ({transaction['date']})",
-                                        'Cost': transaction['amount'],
-                                        'Category': transaction['category'],
-                                        'Date': transaction['date']
-                                    })
-
-                        if st.session_state.monthly_income == 0:
-                            st.session_state.monthly_income = 5000.0
-                        if st.session_state.monthly_rent == 0:
-                            st.session_state.monthly_rent = 1200.0
-
-                        st.success(f"✅ Connected via Plaid!")
-                        st.rerun()
+                    if is_recurring and not any(
+                            s['Name'] == transaction['merchant'] for s in st.session_state.subscriptions):
+                        st.session_state.subscriptions.append({
+                            'Name': transaction['merchant'],
+                            'Cost': transaction['amount'],
+                            'Category': transaction['category'],
+                            'Date Added': transaction['date']
+                        })
                     else:
-                        st.error("Please enter username and password")
-
-            with col2:
-                if st.button("Use Demo", key="plaid_demo_btn"):
-                    if not st.session_state.demo_loaded:
-                        st.session_state.monthly_history = initialize_demo_data()
-                        st.session_state.demo_loaded = True
-
-                    st.session_state.bank_transactions = generate_demo_transactions()
-                    st.session_state.bank_connected = True
-
-                    for transaction in st.session_state.bank_transactions:
-                        recurring_keywords = ['netflix', 'spotify', 'gym', 'internet', 'electric']
-                        is_recurring = any(keyword in transaction['merchant'].lower() for keyword in recurring_keywords)
-
-                        if is_recurring and not any(
-                                s['Name'] == transaction['merchant'] for s in st.session_state.subscriptions):
-                            st.session_state.subscriptions.append({
-                                'Name': transaction['merchant'],
+                        if not any(e['Name'] == f"{transaction['merchant']} ({transaction['date']})" for e in
+                                   st.session_state.expenses):
+                            st.session_state.expenses.append({
+                                'Name': f"{transaction['merchant']} ({transaction['date']})",
                                 'Cost': transaction['amount'],
                                 'Category': transaction['category'],
-                                'Date Added': transaction['date']
+                                'Date': transaction['date']
                             })
-                        else:
-                            if not any(e['Name'] == f"{transaction['merchant']} ({transaction['date']})" for e in
-                                       st.session_state.expenses):
-                                st.session_state.expenses.append({
-                                    'Name': f"{transaction['merchant']} ({transaction['date']})",
-                                    'Cost': transaction['amount'],
-                                    'Category': transaction['category'],
-                                    'Date': transaction['date']
-                                })
 
-                    if st.session_state.monthly_income == 0:
-                        st.session_state.monthly_income = 5000.0
-                    if st.session_state.monthly_rent == 0:
-                        st.session_state.monthly_rent = 1200.0
+                if st.session_state.monthly_income == 0:
+                    st.session_state.monthly_income = 5000.0
+                if st.session_state.monthly_rent == 0:
+                    st.session_state.monthly_rent = 1200.0
 
-                    st.success("✅ Demo mode activated!")
-                    st.rerun()
+                st.success(f"✅ Connected via Plaid! Imported {len(st.session_state.bank_transactions)} transactions")
+                st.rerun()
 
-        # CAPITAL ONE TAB - Identical to Plaid
+        # CAPITAL ONE TAB
         with conn_tab2:
-            st.write("Connect directly to your Capital One account")
+            st.write("Connect directly to Capital One accounts")
 
             col1, col2 = st.columns(2)
             with col1:
-                c1_username = st.text_input("Username", placeholder="Enter username", key="c1_username")
+                c1_api_key = st.text_input("Capital One API Key", type="password", key="c1_api_key")
             with col2:
-                c1_password = st.text_input("Password", type="password", placeholder="Enter password",
-                                            key="c1_password")
+                c1_customer_id = st.text_input("Customer ID (optional)", key="c1_customer_id",
+                                               placeholder="Leave blank for demo")
 
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                if st.button("Sign In", type="primary", key="c1_signin_btn"):
-                    if c1_username and c1_password:
-                        with st.spinner("Authenticating..."):
-                            time.sleep(1)
+            st.info("**Demo:** Click 'Connect' to load Capital One sample data")
 
-                        # Hardcoded API key behind the scenes
-                        c1_api_key = "3bbc7341827baa2056dc8013b397c8bb"
+            if st.button("Connect via Capital One", type="primary", key="connect_c1_btn"):
+                if c1_api_key:
+                    # Try to connect to real API
+                    try:
+                        from services.capital_one_service import CapitalOneService
 
-                        try:
-                            from services.capital_one_service import CapitalOneService
+                        c1_service = CapitalOneService(c1_api_key)
 
-                            c1_service = CapitalOneService(c1_api_key)
+                        if c1_customer_id:
+                            transactions = c1_service.get_customer_accounts_and_transactions(c1_customer_id)
+                        else:
+                            # Get all accounts
                             accounts = c1_service.get_accounts()
-
                             if accounts and len(accounts) > 0:
                                 account_id = accounts[0].get('_id')
                                 transactions = c1_service.get_transactions(account_id)
                             else:
                                 transactions = []
 
-                            if transactions:
-                                st.session_state.bank_transactions = transactions
-                            else:
-                                st.session_state.bank_transactions = generate_demo_transactions()
-
+                        if transactions:
+                            st.session_state.bank_transactions = transactions
                             st.session_state.bank_connected = True
-
-                        except Exception:
+                            st.success(f"✅ Connected to Capital One! Imported {len(transactions)} transactions")
+                        else:
+                            st.warning("No transactions found. Loading demo data instead...")
+                            # Fall back to demo
                             st.session_state.bank_transactions = generate_demo_transactions()
                             st.session_state.bank_connected = True
 
-                        if not st.session_state.demo_loaded:
-                            st.session_state.monthly_history = initialize_demo_data()
-                            st.session_state.demo_loaded = True
-
-                        # Categorize transactions
-                        for transaction in st.session_state.bank_transactions:
-                            recurring_keywords = ['netflix', 'spotify', 'gym', 'internet', 'electric']
-                            is_recurring = any(
-                                keyword in transaction['merchant'].lower() for keyword in recurring_keywords)
-
-                            if is_recurring and not any(
-                                    s['Name'] == transaction['merchant'] for s in st.session_state.subscriptions):
-                                st.session_state.subscriptions.append({
-                                    'Name': transaction['merchant'],
-                                    'Cost': transaction['amount'],
-                                    'Category': transaction['category'],
-                                    'Date Added': transaction['date']
-                                })
-                            else:
-                                if not any(e['Name'] == f"{transaction['merchant']} ({transaction['date']})" for e in
-                                           st.session_state.expenses):
-                                    st.session_state.expenses.append({
-                                        'Name': f"{transaction['merchant']} ({transaction['date']})",
-                                        'Cost': transaction['amount'],
-                                        'Category': transaction['category'],
-                                        'Date': transaction['date']
-                                    })
-
-                        if st.session_state.monthly_income == 0:
-                            st.session_state.monthly_income = 5000.0
-                        if st.session_state.monthly_rent == 0:
-                            st.session_state.monthly_rent = 1200.0
-
-                        st.success("✅ Connected to Capital One!")
-                        st.rerun()
-                    else:
-                        st.error("Please enter username and password")
-
-            with col2:
-                if st.button("Use Demo", key="c1_demo_btn"):
-                    if not st.session_state.demo_loaded:
-                        st.session_state.monthly_history = initialize_demo_data()
-                        st.session_state.demo_loaded = True
-
+                    except Exception as e:
+                        st.error(f"Connection failed: {str(e)}. Loading demo data...")
+                        st.session_state.bank_transactions = generate_demo_transactions()
+                        st.session_state.bank_connected = True
+                else:
+                    # No API key - use demo
                     st.session_state.bank_transactions = generate_demo_transactions()
                     st.session_state.bank_connected = True
+                    st.success("✅ Demo mode: Loaded sample Capital One data")
 
-                    for transaction in st.session_state.bank_transactions:
-                        recurring_keywords = ['netflix', 'spotify', 'gym', 'internet', 'electric']
-                        is_recurring = any(keyword in transaction['merchant'].lower() for keyword in recurring_keywords)
+                # Load demo history
+                if not st.session_state.demo_loaded:
+                    st.session_state.monthly_history = initialize_demo_data()
+                    st.session_state.demo_loaded = True
 
-                        if is_recurring and not any(
-                                s['Name'] == transaction['merchant'] for s in st.session_state.subscriptions):
-                            st.session_state.subscriptions.append({
-                                'Name': transaction['merchant'],
+                # Categorize transactions
+                for transaction in st.session_state.bank_transactions:
+                    recurring_keywords = ['netflix', 'spotify', 'gym', 'internet', 'electric']
+                    is_recurring = any(keyword in transaction['merchant'].lower() for keyword in recurring_keywords)
+
+                    if is_recurring and not any(
+                            s['Name'] == transaction['merchant'] for s in st.session_state.subscriptions):
+                        st.session_state.subscriptions.append({
+                            'Name': transaction['merchant'],
+                            'Cost': transaction['amount'],
+                            'Category': transaction['category'],
+                            'Date Added': transaction['date']
+                        })
+                    else:
+                        if not any(e['Name'] == f"{transaction['merchant']} ({transaction['date']})" for e in
+                                   st.session_state.expenses):
+                            st.session_state.expenses.append({
+                                'Name': f"{transaction['merchant']} ({transaction['date']})",
                                 'Cost': transaction['amount'],
                                 'Category': transaction['category'],
-                                'Date Added': transaction['date']
+                                'Date': transaction['date']
                             })
-                        else:
-                            if not any(e['Name'] == f"{transaction['merchant']} ({transaction['date']})" for e in
-                                       st.session_state.expenses):
-                                st.session_state.expenses.append({
-                                    'Name': f"{transaction['merchant']} ({transaction['date']})",
-                                    'Cost': transaction['amount'],
-                                    'Category': transaction['category'],
-                                    'Date': transaction['date']
-                                })
 
-                    if st.session_state.monthly_income == 0:
-                        st.session_state.monthly_income = 5000.0
-                    if st.session_state.monthly_rent == 0:
-                        st.session_state.monthly_rent = 1200.0
+                if st.session_state.monthly_income == 0:
+                    st.session_state.monthly_income = 5000.0
+                if st.session_state.monthly_rent == 0:
+                    st.session_state.monthly_rent = 1200.0
 
-                    st.success("✅ Demo mode activated!")
-                    st.rerun()
+                st.rerun()
 
         st.markdown("---")
 
